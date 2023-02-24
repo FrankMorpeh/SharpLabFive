@@ -1,4 +1,5 @@
-﻿using SharpLabFive.Models.Workshops;
+﻿using SharpLabFive.Converters.TimeConverters;
+using SharpLabFive.Models.Workshops;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -66,7 +67,7 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         {
             while (true)
             {
-                int sellTimeInSeconds = (int)sellTimeInSecondsUnpacked;
+                int sellTimeInMilliseconds = TimeConverter.ToMillisecondsFromSeconds((int)sellTimeInSecondsUnpacked);
                 int numberOfIterations = itsNumberOfGoodsMade;
                 for (int i = 1; i <= numberOfIterations; i++)
                 {
@@ -77,6 +78,8 @@ namespace SharpLabFive.Controllers.WorkshopControllers
                     itsNumberOfGoodsMutex.WaitOne();
                     itsNumberOfGoodsMade--;
                     itsNumberOfGoodsMutex.ReleaseMutex();
+
+                    Thread.Sleep(sellTimeInMilliseconds);
                 }
                 itsSellGoodsThread.Suspend();
             }
