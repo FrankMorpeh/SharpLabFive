@@ -13,9 +13,10 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         private Thread itsMakeGoodsThread;
         private Thread itsSellGoodsThread;
         private Thread itsBuyResourcesAndPaySalariesThread;
-        private static readonly object itsThreadLocker; // for synchronizing creation and selling of goods
+        private static readonly object itsThreadLocker = new(); // for synchronizing creation and selling of goods
         private Mutex itsMoneyMutex;
         private Mutex itsNumberOfGoodsMutex;
+        private AutoResetEvent itsSellGoodsAutoResetEvent;
 
         public List<Workshop> Workshops { get { return itsWorkshops; } set { itsWorkshops = value; } }
         public double Money { get { return itsMoney; } set { itsMoney = value; } }
@@ -32,6 +33,7 @@ namespace SharpLabFive.Controllers.WorkshopControllers
             itsBuyResourcesAndPaySalariesThread = new Thread(BuyResourcesAndPaySalaries) { IsBackground = true };
             itsMoneyMutex = new Mutex();
             itsNumberOfGoodsMutex = new Mutex();
+            itsSellGoodsAutoResetEvent = new AutoResetEvent(false);
         }
 
         
@@ -52,6 +54,7 @@ namespace SharpLabFive.Controllers.WorkshopControllers
                         itsNumberOfGoodsMade += workshop.MakeGoods();
                         itsNumberOfGoodsMutex.ReleaseMutex();
                     }
+                    itsSellGoodsAutoResetEvent.Set();
                     Monitor.Pulse(itsThreadLocker);
                     Monitor.Wait(itsThreadLocker); // wait until new resources are bought and salaries paid
                 }
@@ -67,6 +70,8 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         {
             while (true)
             {
+                itsSellGoodsAutoResetEvent.WaitOne();
+
                 int sellTimeInMilliseconds = TimeConverter.ToMillisecondsFromSeconds((int)sellTimeInSecondsUnpacked);
                 int numberOfIterations = itsNumberOfGoodsMade;
                 for (int i = 1; i <= numberOfIterations; i++)
@@ -81,7 +86,6 @@ namespace SharpLabFive.Controllers.WorkshopControllers
 
                     Thread.Sleep(sellTimeInMilliseconds);
                 }
-                itsSellGoodsThread.Suspend();
             }
         }
 
