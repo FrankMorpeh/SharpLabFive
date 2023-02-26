@@ -1,0 +1,98 @@
+﻿<Page x:Class="SharpLabFive.Pages.WorkshopsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:SharpLabFive.Pages"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="800"
+      Title="WorkshopsPage">
+
+    <Page.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/InterfaceTemplates/MenuDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.Background>
+            <ImageBrush ImageSource="pack://siteoforigin:,,,/SystemMedia/Images/MenuBackground.jpg"/>
+        </Grid.Background>
+
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="0.15*"/>
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="0.25*"/>
+            <ColumnDefinition Width="0.5*"/>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="0.25*"/>
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Goods per day:" FontSize="24"/>
+                <GridSplitter Width="10"/>
+                <TextBox x:Name="goodsPerDayTextBox" Height="35" Width="60"/>
+            </StackPanel>
+
+            <GridSplitter Height="20"/>
+
+            <Button Width="100" Height="40" Content="ADD" Click="Add_Click"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Vertical" Grid.Column="2" Height="390">
+            <GridSplitter Height="25"/>
+            <DataGrid x:Name="workshopsDataGrid" Grid.Column="1" Style="{StaticResource ResourceKey=mainDataGridStyle}" 
+                    Height="275" Width="350"
+                    BorderBrush="Black" ItemsSource="{Binding Path=Workshops}" GridLinesVisibility="None" AutoGenerateColumns="False">
+                <DataGrid.ItemContainerStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="FontSize" Value="24"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                    </Style>
+                </DataGrid.ItemContainerStyle>
+                <DataGrid.ColumnHeaderStyle>
+                    <Style TargetType="{x:Type DataGridColumnHeader}">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Foreground" Value="White"/>
+                        <Setter Property="FontSize" Value="24"/>
+                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                    </Style>
+                </DataGrid.ColumnHeaderStyle>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Binding="{Binding Path=NumberOfGoodsPerDay}" Header="GOODS PER DAY" Width="*"/>
+                    <DataGridTextColumn Binding="{Binding Path=NumberOfWorkers}" Header="WORKERS" Width="*" IsReadOnly="True"/>
+                    <DataGridTextColumn Binding="{Binding Path=NumberOfResources}" Header="RESOURCES" Width="*" IsReadOnly="True"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <GridSplitter Height="25"/>
+
+            <Button Content="REMOVE" Width="125" Height="40" Click="Remove_Click"/>
+        </StackPanel>
+
+        <Button Grid.Row="1" Grid.Column="3" Content="START WORK" HorizontalAlignment="Center" Width="150" Height="50" 
+                Click="StartWork_Click"/>
+
+
+        <StackPanel x:Name="notificationStackPanel" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" 
+                    HorizontalAlignment="Center" VerticalAlignment="Center" 
+                    MaxHeight="300" MaxWidth="450" Visibility="Hidden">
+            <StackPanel.Background>
+                <ImageBrush ImageSource="pack://siteoforigin:,,,/SystemMedia/Images/NotificationBackground.jpg"/>
+            </StackPanel.Background>
+            <TextBlock x:Name="notificationTextBlock" TextWrapping="Wrap" FontFamily="Open Sans Condensed" Foreground="White" 
+                       FontSize="24" HorizontalAlignment="Center"/>
+            <GridSplitter Height="15"/>
+            <Button x:Name="buttonCloseNotification" Style="{StaticResource ResourceKey=notificationButton}" Content="OK" 
+                    MaxWidth="75" MaxHeight="60" Click="OkButton_Click"/>
+            <GridSplitter Height="15"/>
+        </StackPanel>
+    </Grid>
+</Page>

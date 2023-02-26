@@ -1,13 +1,16 @@
 ﻿using SharpLabFive.Converters.TimeConverters;
 using SharpLabFive.Models.Workshops;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace SharpLabFive.Controllers.WorkshopControllers
 {
-    public class Factory
+    public class Factory : INotifyPropertyChanged
     {
-        private List<Workshop> itsWorkshops;
+        private ObservableCollection<Workshop> itsWorkshops;
         private double itsMoney;
         private int itsNumberOfGoodsMade;
         private Thread itsMakeGoodsThread;
@@ -18,14 +21,17 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         private Mutex itsNumberOfGoodsMutex;
         private AutoResetEvent itsSellGoodsAutoResetEvent;
 
-        public List<Workshop> Workshops { get { return itsWorkshops; } set { itsWorkshops = value; } }
+        public ObservableCollection<Workshop> Workshops 
+        { 
+            get { return itsWorkshops; } set { itsWorkshops = value; OnPropertyChanged("Workshops"); } 
+        }
         public double Money { get { return itsMoney; } set { itsMoney = value; } }
         public int NumberOfGoodsMade { get { return itsNumberOfGoodsMade; } set { itsNumberOfGoodsMade = value; } }
 
-        public Factory() : this(new List<Workshop>()) { }
-        public Factory(List<Workshop> workshops)
+        public Factory() : this(new ObservableCollection<Workshop>()) { }
+        public Factory(ObservableCollection<Workshop> workshops)
         {
-            itsWorkshops = workshops;
+            Workshops = workshops;
             itsMoney = 0.0;
             itsNumberOfGoodsMade = 0;
             itsMakeGoodsThread = new Thread(MakeGoods) { IsBackground = true };
@@ -34,6 +40,16 @@ namespace SharpLabFive.Controllers.WorkshopControllers
             itsMoneyMutex = new Mutex();
             itsNumberOfGoodsMutex = new Mutex();
             itsSellGoodsAutoResetEvent = new AutoResetEvent(false);
+        }
+
+        // Data handling
+        public void AddWorkshop(Workshop workshop)
+        {
+            itsWorkshops.Add(workshop);
+        }
+        public void RemoveWorkshop(Workshop workshop)
+        {
+            itsWorkshops.Remove(workshop);
         }
 
         
@@ -140,6 +156,15 @@ namespace SharpLabFive.Controllers.WorkshopControllers
             foreach (Workshop workshop in itsWorkshops)
                 numberOfWorkers += workshop.NumberOfWorkers;
             return numberOfWorkers;
+        }
+
+
+        // MVVM events
+        public event PropertyChangedEventHandler PropertyChanged;
+        public void OnPropertyChanged([CallerMemberName] string prop = "")
+        {
+            if (PropertyChanged != null)
+                PropertyChanged(this, new PropertyChangedEventArgs(prop));
         }
     }
 }

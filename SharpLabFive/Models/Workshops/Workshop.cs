@@ -1,8 +1,10 @@
-﻿using System.Threading;
+﻿using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace SharpLabFive.Models.Workshops
 {
-    public class Workshop
+    public class Workshop : INotifyPropertyChanged
     {
         private int itsNumberOfGoodsPerDay;
         private int itsNumberOfWorkers;
@@ -11,16 +13,36 @@ namespace SharpLabFive.Models.Workshops
         public Workshop(int numberOfGoodsPerDay)
         {
             itsNumberOfGoodsPerDay = numberOfGoodsPerDay;
-            if (itsNumberOfGoodsPerDay < 2)
-                itsNumberOfWorkers = 1;
-            else
-                itsNumberOfWorkers = itsNumberOfGoodsPerDay / 2;
+            SetNumberOfWorkers();
             itsNumberOfResources = itsNumberOfGoodsPerDay * 5;
         }
+        private void SetNumberOfWorkers()
+        {
+            if (itsNumberOfGoodsPerDay < 2)
+                NumberOfWorkers = 1;
+            else
+                NumberOfWorkers = itsNumberOfGoodsPerDay / 2;
+        }
 
-        public int NumberOfGoodsPerDay { get { return itsNumberOfGoodsPerDay; } set { itsNumberOfGoodsPerDay = value; } }
-        public int NumberOfWorkers { get { return itsNumberOfWorkers; } set { itsNumberOfWorkers = value; } }
-        public int NumberOfResources { get { return itsNumberOfResources; } set { itsNumberOfResources = value; } }
+        public int NumberOfGoodsPerDay 
+        { 
+            get { return itsNumberOfGoodsPerDay; } 
+            set 
+            { 
+                itsNumberOfGoodsPerDay = value;
+                SetNumberOfWorkers();
+                NumberOfResources = itsNumberOfGoodsPerDay * 5;
+                OnPropertyChanged("NumberOfGoodsPerDay");
+            } 
+        }
+        public int NumberOfWorkers 
+        { 
+            get { return itsNumberOfWorkers; } set { itsNumberOfWorkers = value; OnPropertyChanged("NumberOfWorkers"); } 
+        }
+        public int NumberOfResources 
+        { 
+            get { return itsNumberOfResources; } set { itsNumberOfResources = value; OnPropertyChanged("NumberOfResources"); } 
+        }
 
 
         public int MakeGoods()
@@ -47,6 +69,15 @@ namespace SharpLabFive.Models.Workshops
             for (int i = 1; i <= itsNumberOfWorkers * 5; i++)
                 amountOfMoneySpentOnSalaries += salaryForOneWorker;
             return amountOfMoneySpentOnSalaries;
+        }
+
+
+        // MVVM events
+        public event PropertyChangedEventHandler PropertyChanged;
+        public void OnPropertyChanged([CallerMemberName] string prop = "")
+        {
+            if (PropertyChanged != null)
+                PropertyChanged(this, new PropertyChangedEventArgs(prop));
         }
     }
 }
