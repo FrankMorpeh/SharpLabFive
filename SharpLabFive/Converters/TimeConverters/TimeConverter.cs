@@ -2,9 +2,9 @@
 {
     public static class TimeConverter
     {
-        public static int ToMillisecondsFromSeconds(int seconds)
+        public static int ToMillisecondsFromSeconds(double? seconds)
         {
-            return seconds * 1000;
+            return (int)seconds * 1000;
         }
     }
 }

@@ -1,0 +1,1 @@
+NuGet\Install-Package Extended.Wpf.Toolkit -Version 4.5.0

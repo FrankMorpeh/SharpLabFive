@@ -1,6 +1,5 @@
 ﻿using SharpLabFive.Converters.TimeConverters;
 using SharpLabFive.Models.Workshops;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -20,6 +19,9 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         private Mutex itsMoneyMutex;
         private Mutex itsNumberOfGoodsMutex;
         private AutoResetEvent itsSellGoodsAutoResetEvent;
+        private int itsSellingTime;
+        private bool itsStopMakingGoods;
+        private bool itsStopSellingGoods;
 
         public ObservableCollection<Workshop> Workshops 
         { 
@@ -27,6 +29,17 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         }
         public double Money { get { return itsMoney; } set { itsMoney = value; } }
         public int NumberOfGoodsMade { get { return itsNumberOfGoodsMade; } set { itsNumberOfGoodsMade = value; } }
+        public int NumberOfResources 
+        { 
+            get 
+            {
+                int numberOfResources = 0;
+                foreach (Workshop workshop in itsWorkshops)
+                    numberOfResources += workshop.NumberOfResources;
+                return numberOfResources;
+            } 
+        }
+        public int SellingTime { get { return itsSellingTime; } set { itsSellingTime = value; } }
 
         public Factory() : this(new ObservableCollection<Workshop>()) { }
         public Factory(ObservableCollection<Workshop> workshops)
@@ -40,6 +53,9 @@ namespace SharpLabFive.Controllers.WorkshopControllers
             itsMoneyMutex = new Mutex();
             itsNumberOfGoodsMutex = new Mutex();
             itsSellGoodsAutoResetEvent = new AutoResetEvent(false);
+            itsSellingTime = 1000;
+            itsStopMakingGoods = false;
+            itsStopSellingGoods = false;
         }
 
         // Data handling
@@ -62,7 +78,7 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         {
             lock (itsThreadLocker)
             {
-                while (true)
+                while (!itsStopMakingGoods)
                 {
                     foreach (Workshop workshop in itsWorkshops)
                     {
@@ -70,25 +86,32 @@ namespace SharpLabFive.Controllers.WorkshopControllers
                         itsNumberOfGoodsMade += workshop.MakeGoods();
                         itsNumberOfGoodsMutex.ReleaseMutex();
                     }
-                    itsSellGoodsAutoResetEvent.Set();
+                    itsSellGoodsAutoResetEvent.Set(); // allow to sell goods if there were no goods before this iteration
                     Monitor.Pulse(itsThreadLocker);
                     Monitor.Wait(itsThreadLocker); // wait until new resources are bought and salaries paid
                 }
             }
         }
+        public void ContinueMakingGoods()
+        {
+            itsStopMakingGoods = false;
+        }
+        public void StopMakingGoods()
+        {
+            itsStopMakingGoods = true;
+        }
 
         // Selling goods
-        public void SellGoodsAsParallel(int sellTimeInSeconds)
+        public void SellGoodsAsParallel()
         {
-            itsSellGoodsThread.Start(sellTimeInSeconds);
+            itsSellGoodsThread.Start();
         }
-        private void SellGoods(object sellTimeInSecondsUnpacked)
+        private void SellGoods()
         {
-            while (true)
+            while (!itsStopSellingGoods)
             {
-                itsSellGoodsAutoResetEvent.WaitOne();
+                itsSellGoodsAutoResetEvent.WaitOne(); // wait in case there are no goods to sell
 
-                int sellTimeInMilliseconds = TimeConverter.ToMillisecondsFromSeconds((int)sellTimeInSecondsUnpacked);
                 int numberOfIterations = itsNumberOfGoodsMade;
                 for (int i = 1; i <= numberOfIterations; i++)
                 {
@@ -100,9 +123,17 @@ namespace SharpLabFive.Controllers.WorkshopControllers
                     itsNumberOfGoodsMade--;
                     itsNumberOfGoodsMutex.ReleaseMutex();
 
-                    Thread.Sleep(sellTimeInMilliseconds);
+                    Thread.Sleep(itsSellingTime);
                 }
             }
+        }
+        public void ContinueSellingGoods()
+        {
+            itsStopSellingGoods = false;
+        }
+        public void StopSellingGoods()
+        {
+            itsStopSellingGoods = true;
         }
 
         // Updating factory
