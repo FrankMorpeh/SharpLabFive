@@ -5,7 +5,7 @@ namespace SharpLabFive.States.FactoryWorkPageViewStates.FactoryWorkPageProductio
 {
     public interface IFactoryWorkPageProductionButtonState
     {
-        void StopOrContinueProduction(Factory factory, Button stopOrContinueProductionButton
+        void PauseOrContinueProduction(Factory factory, Button oauseOrContinueProductionButton
             , ref IFactoryWorkPageProductionButtonState factoryWorkPageProductionButtonState);
     }
 }

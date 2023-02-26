@@ -5,12 +5,12 @@ namespace SharpLabFive.States.FactoryWorkPageViewStates.FactoryWorkPageProductio
 {
     internal class FactoryWorkPageProductionWorkingButtonState : IFactoryWorkPageProductionButtonState
     {
-        public void StopOrContinueProduction(Factory factory, Button stopOrContinueProductionButton
+        public void PauseOrContinueProduction(Factory factory, Button pauseOrContinueProductionButton
             , ref IFactoryWorkPageProductionButtonState factoryWorkPageProductionButtonState)
         {
-            factory.StopMakingGoods();
-            stopOrContinueProductionButton.Content = "CONTINUE PRODUCTION";
-            factoryWorkPageProductionButtonState = new FactoryWorkPageProductionStoppedButtonState();
+            factory.PauseMakingGoods();
+            pauseOrContinueProductionButton.Content = "CONTINUE PRODUCTION";
+            factoryWorkPageProductionButtonState = new FactoryWorkPageProductionPausedButtonState();
         }
     }
 }

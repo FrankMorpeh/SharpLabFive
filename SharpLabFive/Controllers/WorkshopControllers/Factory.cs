@@ -20,8 +20,11 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         private Mutex itsNumberOfGoodsMutex;
         private AutoResetEvent itsSellGoodsAutoResetEvent;
         private int itsSellingTime;
+        private bool itsPauseMakingGoods;
+        private bool itsPauseSellingGoods;
         private bool itsStopMakingGoods;
         private bool itsStopSellingGoods;
+        private bool itsStopBuyingResources;
 
         public ObservableCollection<Workshop> Workshops 
         { 
@@ -37,7 +40,8 @@ namespace SharpLabFive.Controllers.WorkshopControllers
                 foreach (Workshop workshop in itsWorkshops)
                     numberOfResources += workshop.NumberOfResources;
                 return numberOfResources;
-            } 
+            }
+            set { }
         }
         public int SellingTime { get { return itsSellingTime; } set { itsSellingTime = value; } }
 
@@ -54,8 +58,11 @@ namespace SharpLabFive.Controllers.WorkshopControllers
             itsNumberOfGoodsMutex = new Mutex();
             itsSellGoodsAutoResetEvent = new AutoResetEvent(false);
             itsSellingTime = 1000;
+            itsPauseMakingGoods = false;
+            itsPauseSellingGoods = false;
             itsStopMakingGoods = false;
             itsStopSellingGoods = false;
+            itsStopBuyingResources = false;
         }
 
         // Data handling
@@ -78,12 +85,12 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         {
             lock (itsThreadLocker)
             {
-                while (!itsStopMakingGoods)
+                while (!itsPauseMakingGoods || !itsStopMakingGoods)
                 {
                     foreach (Workshop workshop in itsWorkshops)
                     {
                         itsNumberOfGoodsMutex.WaitOne();
-                        itsNumberOfGoodsMade += workshop.MakeGoods();
+                        NumberOfGoodsMade += workshop.MakeGoods();
                         itsNumberOfGoodsMutex.ReleaseMutex();
                     }
                     itsSellGoodsAutoResetEvent.Set(); // allow to sell goods if there were no goods before this iteration
@@ -94,9 +101,13 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         }
         public void ContinueMakingGoods()
         {
-            itsStopMakingGoods = false;
+            itsPauseMakingGoods = false;
         }
-        public void StopMakingGoods()
+        public void PauseMakingGoods()
+        {
+            itsPauseMakingGoods = true;
+        }
+        public void StopMakingGoodsAsParallel()
         {
             itsStopMakingGoods = true;
         }
@@ -108,7 +119,7 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         }
         private void SellGoods()
         {
-            while (!itsStopSellingGoods)
+            while (!itsPauseSellingGoods || !itsStopSellingGoods)
             {
                 itsSellGoodsAutoResetEvent.WaitOne(); // wait in case there are no goods to sell
 
@@ -116,11 +127,11 @@ namespace SharpLabFive.Controllers.WorkshopControllers
                 for (int i = 1; i <= numberOfIterations; i++)
                 {
                     itsMoneyMutex.WaitOne();
-                    itsMoney += 100;
+                    Money += 100;
                     itsMoneyMutex.ReleaseMutex();
 
                     itsNumberOfGoodsMutex.WaitOne();
-                    itsNumberOfGoodsMade--;
+                    NumberOfGoodsMade--;
                     itsNumberOfGoodsMutex.ReleaseMutex();
 
                     Thread.Sleep(itsSellingTime);
@@ -129,9 +140,13 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         }
         public void ContinueSellingGoods()
         {
-            itsStopSellingGoods = false;
+            itsPauseSellingGoods = false;
         }
-        public void StopSellingGoods()
+        public void PauseSellingGoods()
+        {
+            itsPauseSellingGoods = true;
+        }
+        public void StopSellingGoodsAsParallel()
         {
             itsStopSellingGoods = true;
         }
@@ -145,7 +160,7 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         {
             lock (itsThreadLocker)
             {
-                while (true)
+                while (!itsStopBuyingResources)
                 {
                     BuyResources();
                     PaySalaries();
@@ -160,7 +175,7 @@ namespace SharpLabFive.Controllers.WorkshopControllers
             foreach (Workshop workshop in itsWorkshops)
             {
                 itsMoneyMutex.WaitOne();
-                itsMoney -= workshop.UpdateResources(priceForOneResource);
+                Money -= workshop.UpdateResources(priceForOneResource);
                 itsMoneyMutex.ReleaseMutex();
             }
         }
@@ -177,7 +192,7 @@ namespace SharpLabFive.Controllers.WorkshopControllers
             foreach (Workshop workshop in itsWorkshops)
             {
                 itsMoneyMutex.WaitOne();
-                itsMoney -= workshop.PaySalaries(salaryForOneWorker);
+                Money -= workshop.PaySalaries(salaryForOneWorker);
                 itsMoneyMutex.ReleaseMutex();
             }
         }
@@ -187,6 +202,10 @@ namespace SharpLabFive.Controllers.WorkshopControllers
             foreach (Workshop workshop in itsWorkshops)
                 numberOfWorkers += workshop.NumberOfWorkers;
             return numberOfWorkers;
+        }
+        public void StopBuyingResourcesAndPaySalariesAsParallel()
+        {
+            itsStopBuyingResources = true;
         }
 
 

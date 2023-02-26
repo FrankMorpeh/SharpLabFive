@@ -3,13 +3,13 @@ using System.Windows.Controls;
 
 namespace SharpLabFive.States.FactoryWorkPageViewStates.FactoryWorkPageProductionButtonStates
 {
-    public class FactoryWorkPageProductionStoppedButtonState : IFactoryWorkPageProductionButtonState
+    public class FactoryWorkPageProductionPausedButtonState : IFactoryWorkPageProductionButtonState
     {
-        public void StopOrContinueProduction(Factory factory, Button stopOrContinueProductionButton
+        public void PauseOrContinueProduction(Factory factory, Button pauseOrContinueProductionButton
             , ref IFactoryWorkPageProductionButtonState factoryWorkPageProductionButtonState)
         {
             factory.ContinueMakingGoods();
-            stopOrContinueProductionButton.Content = "STOP PRODUCTION";
+            pauseOrContinueProductionButton.Content = "PAUSE PRODUCTION";
             factoryWorkPageProductionButtonState = new FactoryWorkPageProductionWorkingButtonState();
         }
     }
