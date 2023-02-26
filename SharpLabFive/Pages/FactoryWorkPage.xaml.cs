@@ -1,6 +1,7 @@
 ﻿using SharpLabFive.Converters.TimeConverters;
 using SharpLabFive.States.FactoryWorkPageViewStates.FactoryWorkPageProductionButtonStates;
 using SharpLabFive.States.FactoryWorkPageViewStates.FactoryWorkPageSellingButtonStates;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -23,7 +24,9 @@ namespace SharpLabFive.Pages
 
             itsProductionButtonState = new FactoryWorkPageProductionWorkingButtonState();
             itsSellingButtonState = new FactoryWorkPageSellingWorkingButtonState();
-
+        }
+        private void FactoryWorkPage_Loaded(object sender, EventArgs e)
+        {
             itsContent.factory.MakeGoodsAsParallel();
             itsContent.factory.SellGoodsAsParallel();
             itsContent.factory.BuyResourcesAndPaySalariesAsParallel();
@@ -51,6 +54,8 @@ namespace SharpLabFive.Pages
             itsContent.factory.StopMakingGoodsAsParallel();
             itsContent.factory.StopSellingGoodsAsParallel();
             itsContent.factory.StopBuyingResourcesAndPaySalariesAsParallel();
+
+            itsContent.frame.Content = new WorkshopsPage(itsContent);
         }
     }
 }

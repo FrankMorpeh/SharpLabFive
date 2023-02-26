@@ -48,10 +48,12 @@ namespace SharpLabFive.Models.Workshops
         public int MakeGoods()
         {
             int numberOfGoodsMade = 0;
+            int numberOfResourcesToDeduct = NumberOfResources / NumberOfGoodsPerDay;
             for (int i = 1; i <= itsNumberOfGoodsPerDay; i++)
             {
-                Thread.Sleep(100);
+                Thread.Sleep(500);
                 numberOfGoodsMade++;
+                NumberOfResources -= numberOfResourcesToDeduct;
             }
             return numberOfGoodsMade;
         }
@@ -59,8 +61,12 @@ namespace SharpLabFive.Models.Workshops
         public double UpdateResources(double priceForOneResource)
         {
             double amountOfMoneySpentOnResources = 0.0;
+            int numberOfResourcesToAdd = NumberOfResources / NumberOfGoodsPerDay;
             for (int i = 1; i <= itsNumberOfGoodsPerDay; i++)
+            {
                 amountOfMoneySpentOnResources += priceForOneResource;
+                NumberOfResources += numberOfResourcesToAdd;
+            }
             return amountOfMoneySpentOnResources;
         }
         public double PaySalaries(double salaryForOneWorker)

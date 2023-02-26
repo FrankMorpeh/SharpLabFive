@@ -7,7 +7,8 @@
       xmlns:local="clr-namespace:SharpLabFive.Pages"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
-      Title="FactoryWorkPage">
+      Title="FactoryWorkPage"
+      Loaded="FactoryWorkPage_Loaded">
 
     <Page.Resources>
         <ResourceDictionary>
@@ -38,19 +39,22 @@
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Money:" FontSize="32"/>
                 <GridSplitter Width="10"/>
-                <TextBlock x:Name="moneyTextBlock" Text="{Binding Path=Money, Mode=TwoWay}" FontSize="32"/>
+                <TextBlock x:Name="moneyTextBlock" Text="{Binding Path=Money, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                           FontSize="32"/>
             </StackPanel>
             <GridSplitter Height="20"/>
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Goods:" FontSize="32"/>
                 <GridSplitter Width="10"/>
-                <TextBlock x:Name="numberOfGoodsMadeTextBlock" Text="{Binding Path=NumberOfGoodsMade, Mode=TwoWay}" FontSize="32"/>
+                <TextBlock x:Name="numberOfGoodsMadeTextBlock" Text="{Binding Path=NumberOfGoodsMade, Mode=TwoWay, 
+                    UpdateSourceTrigger=PropertyChanged}" FontSize="32"/>
             </StackPanel>
             <GridSplitter Height="20"/>
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Resources:" FontSize="32"/>
                 <GridSplitter Width="10"/>
-                <TextBlock x:Name="numberOfResourcesTextBlock" Text="{Binding Path=NumberOfResources, Mode=TwoWay}" FontSize="32"/>
+                <TextBlock x:Name="numberOfResourcesTextBlock" Text="{Binding Path=NumberOfResources, Mode=TwoWay
+                    , UpdateSourceTrigger=PropertyChanged}" FontSize="32"/>
             </StackPanel>
         </StackPanel>
 
