@@ -12,16 +12,19 @@ namespace SharpLabFive
     /// </summary>
     public partial class MainWindow : Window
     {
+        public static string initialLocation;
         public Factory factory;
+
+        static MainWindow()
+        {
+            initialLocation = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            initialLocation = System.IO.Path.GetDirectoryName(initialLocation);
+        }
         public MainWindow()
         {
             InitializeComponent();
+            Directories.DirectoriesChecker.CreateDirectoriesIfNeeded();
             factory = new Factory();
-            //factory = new Factory(new System.Collections.ObjectModel.ObservableCollection<Workshop>() 
-            //    { new Workshop(10), new Workshop(5), new Workshop(3) });
-            //factory.SellGoodsAsParallel(1);
-            //factory.MakeGoodsAsParallel();
-            //factory.BuyResourcesAndPaySalariesAsParallel();
         }
 
         private void MainWindow_Loaded(object sender, EventArgs e)

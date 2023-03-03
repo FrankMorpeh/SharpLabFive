@@ -1,4 +1,5 @@
 ﻿using SharpLabFive.Models.Workshops;
+using SharpLabFive.XmlLoggers.FactoryLoggers;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -15,20 +16,18 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         private Thread itsMakeGoodsThread;
         private Thread itsSellGoodsThread;
         private Thread itsBuyResourcesAndPaySalariesThread;
-        private static readonly object itsThreadLocker = new(); // for synchronizing creation and selling of goods
         private Mutex itsMoneyMutex;
         private Mutex itsNumberOfGoodsMutex;
         private Mutex itsNumberOfResourcesMutex;
-        private AutoResetEvent itsSellGoodsAutoResetEvent;
         private int itsSellingTime;
         private bool itsSellGoodsThreadWorking;
         private bool itsBuyResourcesThreadWorking;
         private bool itsPauseMakingGoods;
         private bool itsPauseSellingGoods;
-        private bool itsPauseBuyingResources;
         private bool itsStopMakingGoods;
         private bool itsStopSellingGoods;
         private bool itsStopBuyingResources;
+        private System.Timers.Timer itsLoggingTimer; 
 
         public ObservableCollection<Workshop> Workshops 
         { 
@@ -59,16 +58,15 @@ namespace SharpLabFive.Controllers.WorkshopControllers
             itsMoneyMutex = new Mutex();
             itsNumberOfGoodsMutex = new Mutex();
             itsNumberOfResourcesMutex = new Mutex();
-            itsSellGoodsAutoResetEvent = new AutoResetEvent(false);
             itsSellingTime = 1000;
             itsSellGoodsThreadWorking = false;
             itsBuyResourcesThreadWorking = false;
             itsPauseMakingGoods = false;
             itsPauseSellingGoods = false;
-            itsPauseBuyingResources = false;
             itsStopMakingGoods = false;
             itsStopSellingGoods = false;
             itsStopBuyingResources = false;
+            itsLoggingTimer = new System.Timers.Timer(1000); itsLoggingTimer.Elapsed += LoggingTimer_Elapsed;
         }
         private int GetCommonNumberOfResources()
         {
@@ -232,6 +230,13 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         public void StopBuyingResourcesAndPaySalariesAsParallel()
         {
             itsStopBuyingResources = true;
+        }
+
+
+        // Timer event handlers
+        private void LoggingTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
+        {
+            XmlFactoryLogger.LogFactory(this);
         }
 
 
