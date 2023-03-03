@@ -28,8 +28,8 @@ namespace SharpLabFive.Pages
         private void FactoryWorkPage_Loaded(object sender, EventArgs e)
         {
             itsContent.factory.MakeGoodsAsParallel();
-            itsContent.factory.SellGoodsAsParallel();
-            itsContent.factory.BuyResourcesAndPaySalariesAsParallel();
+            //itsContent.factory.SellGoodsAsParallel();
+            //itsContent.factory.BuyResourcesAndPaySalariesAsParallel();
         }
         private void InitializeExtraComponents()
         {

@@ -60,19 +60,13 @@ namespace SharpLabFive.Models.Workshops
 
         public double UpdateResources(double priceForOneResource)
         {
-            double amountOfMoneySpentOnResources = 0.0;
-            int numberOfResourcesToAdd = NumberOfResources / NumberOfGoodsPerDay;
-            for (int i = 1; i <= itsNumberOfGoodsPerDay; i++)
-            {
-                amountOfMoneySpentOnResources += priceForOneResource;
-                NumberOfResources += numberOfResourcesToAdd;
-            }
-            return amountOfMoneySpentOnResources;
+            NumberOfResources = NumberOfGoodsPerDay * 5;
+            return NumberOfGoodsPerDay * priceForOneResource;
         }
         public double PaySalaries(double salaryForOneWorker)
         {
             double amountOfMoneySpentOnSalaries = 0.0;
-            for (int i = 1; i <= itsNumberOfWorkers * 5; i++)
+            for (int i = 1; i <= itsNumberOfWorkers; i++)
                 amountOfMoneySpentOnSalaries += salaryForOneWorker;
             return amountOfMoneySpentOnSalaries;
         }

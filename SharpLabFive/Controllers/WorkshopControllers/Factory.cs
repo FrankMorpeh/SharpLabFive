@@ -1,5 +1,4 @@
-﻿using SharpLabFive.Converters.TimeConverters;
-using SharpLabFive.Models.Workshops;
+﻿using SharpLabFive.Models.Workshops;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -12,16 +11,21 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         private ObservableCollection<Workshop> itsWorkshops;
         private double itsMoney;
         private int itsNumberOfGoodsMade;
+        private int itsNumberOfResources;
         private Thread itsMakeGoodsThread;
         private Thread itsSellGoodsThread;
         private Thread itsBuyResourcesAndPaySalariesThread;
         private static readonly object itsThreadLocker = new(); // for synchronizing creation and selling of goods
         private Mutex itsMoneyMutex;
         private Mutex itsNumberOfGoodsMutex;
+        private Mutex itsNumberOfResourcesMutex;
         private AutoResetEvent itsSellGoodsAutoResetEvent;
         private int itsSellingTime;
+        private bool itsSellGoodsThreadWorking;
+        private bool itsBuyResourcesThreadWorking;
         private bool itsPauseMakingGoods;
         private bool itsPauseSellingGoods;
+        private bool itsPauseBuyingResources;
         private bool itsStopMakingGoods;
         private bool itsStopSellingGoods;
         private bool itsStopBuyingResources;
@@ -30,18 +34,15 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         { 
             get { return itsWorkshops; } set { itsWorkshops = value; OnPropertyChanged("Workshops"); } 
         }
-        public double Money { get { return itsMoney; } set { itsMoney = value; } }
-        public int NumberOfGoodsMade { get { return itsNumberOfGoodsMade; } set { itsNumberOfGoodsMade = value; } }
+        public double Money { get { return itsMoney; } set { itsMoney = value; OnPropertyChanged("Money"); } }
+        public int NumberOfGoodsMade 
+        { 
+            get { return itsNumberOfGoodsMade; } set { itsNumberOfGoodsMade = value; OnPropertyChanged("NumberOfGoodsMade"); } 
+        }
         public int NumberOfResources 
         { 
-            get 
-            {
-                int numberOfResources = 0;
-                foreach (Workshop workshop in itsWorkshops)
-                    numberOfResources += workshop.NumberOfResources;
-                return numberOfResources;
-            }
-            set { }
+            get { return itsNumberOfResources; }
+            set { itsNumberOfResources = value; OnPropertyChanged("NumberOfResources"); }
         }
         public int SellingTime { get { return itsSellingTime; } set { itsSellingTime = value; } }
 
@@ -49,20 +50,32 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         public Factory(ObservableCollection<Workshop> workshops)
         {
             Workshops = workshops;
-            itsMoney = 0.0;
-            itsNumberOfGoodsMade = 0;
+            Money = 0;
+            NumberOfGoodsMade = 0;
+            NumberOfResources = 0;
             itsMakeGoodsThread = new Thread(MakeGoods) { IsBackground = true };
             itsSellGoodsThread = new Thread(SellGoods) { IsBackground = true };
             itsBuyResourcesAndPaySalariesThread = new Thread(BuyResourcesAndPaySalaries) { IsBackground = true };
             itsMoneyMutex = new Mutex();
             itsNumberOfGoodsMutex = new Mutex();
+            itsNumberOfResourcesMutex = new Mutex();
             itsSellGoodsAutoResetEvent = new AutoResetEvent(false);
             itsSellingTime = 1000;
+            itsSellGoodsThreadWorking = false;
+            itsBuyResourcesThreadWorking = false;
             itsPauseMakingGoods = false;
             itsPauseSellingGoods = false;
+            itsPauseBuyingResources = false;
             itsStopMakingGoods = false;
             itsStopSellingGoods = false;
             itsStopBuyingResources = false;
+        }
+        private int GetCommonNumberOfResources()
+        {
+            int commonNumberOfResources = 0;
+            foreach (Workshop workshop in itsWorkshops)
+                commonNumberOfResources += workshop.NumberOfResources;
+            return commonNumberOfResources;
         }
 
         // Data handling
@@ -79,23 +92,33 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         // Making goods
         public void MakeGoodsAsParallel()
         {
+            NumberOfResources = GetCommonNumberOfResources();
             itsMakeGoodsThread.Start();
         }
         private void MakeGoods()
         {
-            lock (itsThreadLocker)
+            while (!itsStopMakingGoods)
             {
-                while (!itsPauseMakingGoods || !itsStopMakingGoods)
+                if (!itsPauseMakingGoods)
                 {
                     foreach (Workshop workshop in itsWorkshops)
                     {
-                        itsNumberOfGoodsMutex.WaitOne();
-                        NumberOfGoodsMade += workshop.MakeGoods();
-                        itsNumberOfGoodsMutex.ReleaseMutex();
+                        while (NumberOfResources >= workshop.NumberOfGoodsPerDay * 5)
+                        {
+                            itsNumberOfGoodsMutex.WaitOne();
+                            NumberOfGoodsMade += workshop.MakeGoods();
+                            itsNumberOfGoodsMutex.ReleaseMutex();
+
+                            itsNumberOfResourcesMutex.WaitOne();
+                            NumberOfResources -= workshop.NumberOfGoodsPerDay * 5;
+                            itsNumberOfResourcesMutex.ReleaseMutex();
+
+                            if (!itsSellGoodsThreadWorking)
+                                SellGoodsAsParallel();
+                        }
                     }
-                    itsSellGoodsAutoResetEvent.Set(); // allow to sell goods if there were no goods before this iteration
-                    Monitor.Pulse(itsThreadLocker);
-                    Monitor.Wait(itsThreadLocker); // wait until new resources are bought and salaries paid
+                    if (!itsBuyResourcesThreadWorking)
+                        BuyResourcesAndPaySalariesAsParallel();
                 }
             }
         }
@@ -113,28 +136,29 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         }
 
         // Selling goods
-        public void SellGoodsAsParallel()
+        private void SellGoodsAsParallel()
         {
+            itsSellGoodsThreadWorking = true;
             itsSellGoodsThread.Start();
         }
         private void SellGoods()
         {
-            while (!itsPauseSellingGoods || !itsStopSellingGoods)
+            while (!itsStopSellingGoods)
             {
-                itsSellGoodsAutoResetEvent.WaitOne(); // wait in case there are no goods to sell
-
-                int numberOfIterations = itsNumberOfGoodsMade;
-                for (int i = 1; i <= numberOfIterations; i++)
+                if (!itsPauseSellingGoods)
                 {
-                    itsMoneyMutex.WaitOne();
-                    Money += 100;
-                    itsMoneyMutex.ReleaseMutex();
+                    if (NumberOfGoodsMade > 0)
+                    {
+                        itsMoneyMutex.WaitOne();
+                        Money += 100;
+                        itsMoneyMutex.ReleaseMutex();
 
-                    itsNumberOfGoodsMutex.WaitOne();
-                    NumberOfGoodsMade--;
-                    itsNumberOfGoodsMutex.ReleaseMutex();
+                        itsNumberOfGoodsMutex.WaitOne();
+                        NumberOfGoodsMade -= 1;
+                        itsNumberOfGoodsMutex.ReleaseMutex();
 
-                    Thread.Sleep(itsSellingTime);
+                        Thread.Sleep(itsSellingTime);
+                    }
                 }
             }
         }
@@ -152,56 +176,58 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         }
 
         // Updating factory
-        public void BuyResourcesAndPaySalariesAsParallel()
+        private void BuyResourcesAndPaySalariesAsParallel()
         {
+            itsBuyResourcesThreadWorking = true;
             itsBuyResourcesAndPaySalariesThread.Start();
         }
         private void BuyResourcesAndPaySalaries()
         {
-            lock (itsThreadLocker)
+            while (!itsStopBuyingResources)
             {
-                while (!itsStopBuyingResources)
-                {
-                    BuyResources();
-                    PaySalaries();
-                    Monitor.Pulse(itsThreadLocker);
-                    Monitor.Wait(itsThreadLocker);
-                }
+                BuyResources();
+                PaySalaries();
             }
         }
         private void BuyResources()
         {
-            double priceForOneResource = GetPriceForOneResource();
             foreach (Workshop workshop in itsWorkshops)
             {
-                itsMoneyMutex.WaitOne();
-                Money -= workshop.UpdateResources(priceForOneResource);
-                itsMoneyMutex.ReleaseMutex();
+                while (true)
+                {
+                    if (itsMoney >= workshop.NumberOfGoodsPerDay * 50)
+                    {
+                        itsMoneyMutex.WaitOne();
+                        Money -= workshop.UpdateResources(50);
+                        itsMoneyMutex.ReleaseMutex();
+
+                        itsNumberOfResourcesMutex.WaitOne();
+                        NumberOfResources += workshop.NumberOfGoodsPerDay * 5;
+                        itsNumberOfResourcesMutex.ReleaseMutex();
+
+                        break;
+                    }
+                }
+                Thread.Sleep(300);
             }
-        }
-        private double GetPriceForOneResource()
-        {
-            double numberOfResourcesNeeded = 0.0;
-            foreach (Workshop workshop in itsWorkshops)
-                numberOfResourcesNeeded = workshop.NumberOfGoodsPerDay * 5;
-            return (itsMoney / 2) / numberOfResourcesNeeded;
         }
         private void PaySalaries()
         {
-            double salaryForOneWorker = itsMoney / GetNumberOfWorkers(); // no need to divide money by two as resources have been bought before
             foreach (Workshop workshop in itsWorkshops)
             {
-                itsMoneyMutex.WaitOne();
-                Money -= workshop.PaySalaries(salaryForOneWorker);
-                itsMoneyMutex.ReleaseMutex();
+                while (true)
+                {
+                    if (itsMoney >= workshop.NumberOfWorkers * 50)
+                    {
+                        itsMoneyMutex.WaitOne();
+                        Money -= workshop.PaySalaries(50);
+                        itsMoneyMutex.ReleaseMutex();
+
+                        break;
+                    }
+                }
+                Thread.Sleep(200);
             }
-        }
-        private int GetNumberOfWorkers()
-        {
-            int numberOfWorkers = 0;
-            foreach (Workshop workshop in itsWorkshops)
-                numberOfWorkers += workshop.NumberOfWorkers;
-            return numberOfWorkers;
         }
         public void StopBuyingResourcesAndPaySalariesAsParallel()
         {
