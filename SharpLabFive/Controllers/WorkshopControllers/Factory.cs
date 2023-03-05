@@ -66,7 +66,7 @@ namespace SharpLabFive.Controllers.WorkshopControllers
             itsStopMakingGoods = false;
             itsStopSellingGoods = false;
             itsStopBuyingResources = false;
-            itsLoggingTimer = new System.Timers.Timer(1000); itsLoggingTimer.Elapsed += LoggingTimer_Elapsed;
+            itsLoggingTimer = new System.Timers.Timer(30000); itsLoggingTimer.Elapsed += LoggingTimer_Elapsed;
         }
         private int GetCommonNumberOfResources()
         {
@@ -90,6 +90,7 @@ namespace SharpLabFive.Controllers.WorkshopControllers
         // Making goods
         public void MakeGoodsAsParallel()
         {
+            itsLoggingTimer.Start();
             NumberOfResources = GetCommonNumberOfResources();
             itsMakeGoodsThread.Start();
         }
